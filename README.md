@@ -1,15 +1,52 @@
-# StudentServe — Student Service Request System
+# StudentServe – Student Service Request System
 
-React starter project for the Limkokwing University assignment (Step 1).
+StudentServe is a web application developed for Limkokwing University students. It allows students to request university services online instead of visiting different offices.
 
-## Run
-1. Install Node.js.
-2. Open this folder in VS Code.
+## Technologies Used
+
+- React.js
+- JavaScript
+- HTML and CSS
+- Firebase Authentication
+- Firebase Firestore
+- Firebase Hosting
+
+## Features
+
+- Student registration and login
+- Email verification and password reset
+- View available university services
+- View service details
+- Submit student service requests
+- View and manage submitted requests
+- Track request status
+- Responsive design for mobile and desktop
+
+## Available Services
+
+1. Academic Transcript
+2. Letter of Recommendation
+3. Registration Assistance
+4. Student ID Replacement
+5. Technical Support
+6. General Enquiry
+
+## How to Run
+
+1. Download or clone the project.
+2. Open the project in VS Code.
 3. Run `npm install`.
-4. Run `npm start`.
+4. Configure Firebase in `src/firebase.js` if using your own Firebase project.
+5. Run `npm start`.
 
-Includes Home, Services, navigation, reusable ServiceCard component and responsive CSS.
+## Live Website
 
-**Not yet implemented:** service details, request form, confirmation, Firebase Firestore, request CRUD. Links to those pages show a temporary placeholder.
+https://student-service-system.web.app
 
-Processing times are sample values for the assignment.
+## GitHub Repository
+
+https://github.com/keke2005/student-service-system
+
+## Project Purpose
+
+This project was developed to make university services easier to access and help students submit and manage their requests online.
