@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    match /users/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['fullName','studentId','email','createdAt'])
+        && request.resource.data.email == request.auth.token.email;
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow update, delete: if false;
+    }
+    match /requests/{requestId} {
+      allow create: if verified()
+        && request.resource.data.keys().hasAll(['ownerUid','studentName','studentId','email','serviceId','serviceName','description','requestDate','status'])
+        && request.resource.data.keys().hasOnly(['ownerUid','studentName','studentId','email','serviceId','serviceName','description','requestDate','status'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == 'Pending'
+        && request.resource.data.description is string;
+      allow read: if verified() && resource.data.ownerUid == request.auth.uid;
+      allow update: if verified()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description'])
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0;
+      allow delete: if verified() && resource.data.ownerUid == request.auth.uid;
+    }
+  }
+}

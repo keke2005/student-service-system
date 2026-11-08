@@ -1,0 +1,3 @@
+import React from "react";
+import {Link} from "react-router-dom";
+export default function Footer(){return <footer className="footer"><div className="footer-content"><div><h2>StudentServe<span>.</span></h2><p>Making university services more accessible, convenient, and efficient for students.</p></div><div><h3>Quick Links</h3><Link to="/">Home</Link><Link to="/services">Services</Link><Link to="/requests">My Requests</Link></div><div><h3>University</h3><p>Limkokwing University</p><p>Maseru, Lesotho</p><p>Student Services Portal</p></div></div><div className="footer-bottom"><p>© 2026 StudentServe. All Rights Reserved.</p></div></footer>}
