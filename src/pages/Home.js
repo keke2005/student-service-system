@@ -10,8 +10,8 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section className="hero">
-        <div className="hero-content">
 
+        <div className="hero-content">
           <span className="hero-label">
             WELCOME TO YOUR STUDENT PORTAL
           </span>
@@ -23,10 +23,12 @@ export default function Home() {
           </h1>
 
           <p>
-            Access university services in one place.
-            Request academic documents, get help with
-            registration or technical issues, and keep
-            track of your requests online.
+            Need help with something at campus? We have
+            made it easier for you to access student
+            services in one place. Request your academic
+            documents, get registration assistance, or
+            report technical problems without having to
+            visit different offices.
           </p>
 
           <div className="hero-buttons">
@@ -50,10 +52,9 @@ export default function Home() {
               <p>Online Access</p>
             </div>
           </div>
-
         </div>
 
-        {/* STUDENT SERVICES CARD */}
+        {/* RIGHT SIDE */}
         <div className="hero-visual">
           <div className="visual-card">
 
@@ -62,8 +63,8 @@ export default function Home() {
             <h2>Student Service Portal</h2>
 
             <p>
-              Everything you need for student support,
-              all in one place.
+              Making it easier for students to get the
+              help and support they need.
             </p>
 
             <div className="visual-item">
@@ -71,7 +72,7 @@ export default function Home() {
               <div>
                 <strong>Academic Documents</strong>
                 <small>
-                  Request transcripts and letters
+                  Get your transcripts and official letters.
                 </small>
               </div>
             </div>
@@ -81,7 +82,7 @@ export default function Home() {
               <div>
                 <strong>Student Assistance</strong>
                 <small>
-                  Registration and student ID support
+                  Need help with registration or your student ID?
                 </small>
               </div>
             </div>
@@ -91,28 +92,30 @@ export default function Home() {
               <div>
                 <strong>Technical Support</strong>
                 <small>
-                  Get help with technical issues
+                  Having technical problems? We're here to help.
                 </small>
               </div>
             </div>
 
           </div>
         </div>
+
       </section>
 
-      {/* AVAILABLE SERVICES */}
+      {/* SERVICES SECTION */}
       <section className="services-section">
 
         <div className="section-heading">
           <span className="section-label">
-            WHAT WE OFFER
+            HOW WE CAN HELP
           </span>
 
-          <h2>Our Student Services</h2>
+          <h2>Services for Students</h2>
 
           <p>
-            Find the support you need for your
-            academic and campus activities.
+            From academic documents to technical support,
+            find the services you need to make your
+            student life easier.
           </p>
         </div>
 
@@ -137,19 +140,21 @@ export default function Home() {
       <section className="cta-section">
 
         <span className="section-label">
-          NEED ASSISTANCE?
+          WE'RE HERE FOR YOU
         </span>
 
-        <h2>We're Here to Help</h2>
+        <h2>How Can We Help You Today?</h2>
 
         <p>
-          Need an academic document, registration help,
-          or technical support? Submit your request
-          online and check its progress.
+          Whether you need a transcript, help with
+          registration, or assistance with a technical
+          issue, simply submit a request through our
+          portal. You can also check the progress
+          of your request whenever you need to.
         </p>
 
         <Link to="/services" className="cta-btn">
-          Get Started →
+          Submit a Request →
         </Link>
 
       </section>

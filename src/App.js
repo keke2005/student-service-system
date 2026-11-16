@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Routes,
   Route,
@@ -27,6 +27,23 @@ import "./App.css";
 function App() {
   const location = useLocation();
 
+  // DARK AND LIGHT MODE
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("studentserve-theme") || "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("studentserve-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((current) =>
+      current === "dark" ? "light" : "dark"
+    );
+  };
+
+  // HIDE NAVBAR ON AUTHENTICATION PAGES
   const authPages = [
     "/login",
     "/register",
@@ -38,12 +55,21 @@ function App() {
 
   return (
     <>
-      {!isAuthPage && <Navbar />}
+      {/* NAVIGATION WITH THEME TOGGLE */}
+      {!isAuthPage && (
+        <Navbar
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+      )}
 
+      {/* APPLICATION ROUTES */}
       <Routes>
         {/* PUBLIC AUTHENTICATION PAGES */}
         <Route path="/login" element={<Login />} />
+
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/forgot-password"
           element={<ForgotPassword />}
@@ -51,34 +77,47 @@ function App() {
 
         {/* PROTECTED STUDENT PORTAL */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route
+            path="/"
+            element={<Navigate to="/home" replace />}
+          />
+
           <Route path="/home" element={<Home />} />
+
           <Route path="/services" element={<Services />} />
+
           <Route
             path="/services/:id"
             element={<ServiceDetails />}
           />
+
           <Route
             path="/request/:id"
             element={<RequestForm />}
           />
+
           <Route
             path="/request-confirmation"
             element={<RequestConfirmation />}
           />
+
           <Route
             path="/requests"
             element={<MyRequests />}
           />
         </Route>
 
-        {/* 404 PAGE */}
+        {/* PAGE NOT FOUND */}
         <Route
           path="*"
           element={
             <div className="not-found">
               <h1>Page Not Found</h1>
-              <p>The page you are looking for does not exist.</p>
+
+              <p>
+                The page you are looking for does not exist.
+              </p>
+
               <Link to="/home" className="primary-btn">
                 Back to Home
               </Link>
@@ -87,6 +126,7 @@ function App() {
         />
       </Routes>
 
+      {/* FOOTER */}
       {!isAuthPage && <Footer />}
     </>
   );

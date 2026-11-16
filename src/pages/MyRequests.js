@@ -340,10 +340,6 @@ export default function MyRequests() {
           </div>
         )}
 
-        <p className="requests-help">
-          You can edit your request description,
-          update its status, or delete a request.
-        </p>
 
       </div>
     </main>
