@@ -8,13 +8,11 @@ import {
   signOut,
   reload
 } from "firebase/auth";
-
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
-const API_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:500";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:500";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -40,9 +38,7 @@ export default function Login() {
       const authorized = await refreshAuthorization(firebaseUser);
 
       if (!authorized) {
-        throw new Error(
-          "Unable to verify administrator access."
-        );
+        throw new Error("Unable to verify administrator access.");
       }
 
       navigate("/admin/dashboard", { replace: true });
@@ -71,17 +67,14 @@ export default function Login() {
 
     if (!response.ok || data.success !== true) {
       throw new Error(
-        data.message ||
-          "Your student account is not approved or active."
+        data.message || "Your student account is not approved or active."
       );
     }
 
     const authorized = await refreshAuthorization(firebaseUser);
 
     if (!authorized) {
-      throw new Error(
-        "Unable to verify your student account."
-      );
+      throw new Error("Unable to verify your student account.");
     }
 
     const requestedPath = location.state?.from?.pathname;
@@ -138,10 +131,7 @@ export default function Login() {
         prompt: "select_account"
       });
 
-      const result = await signInWithPopup(
-        auth,
-        provider
-      );
+      const result = await signInWithPopup(auth, provider);
 
       await finishLogin(result.user);
     } catch (err) {
@@ -172,7 +162,6 @@ export default function Login() {
 
             <div className="student-login-heading">
               <h1>StudentServe Login</h1>
-              <p>Students and Administrators</p>
             </div>
 
             <form onSubmit={handleEmailLogin}>
@@ -221,14 +210,7 @@ export default function Login() {
               </button>
             </form>
 
-            <p
-              style={{
-                textAlign: "center",
-                margin: "18px 0"
-              }}
-            >
-              OR
-            </p>
+            <p className="login-divider">OR</p>
 
             <button
               className="google-login-button"
@@ -247,11 +229,6 @@ export default function Login() {
                 {error}
               </p>
             )}
-
-            <p className="student-login-notice">
-              Only approved students and administrators
-              can access StudentServe.
-            </p>
           </div>
         </section>
       </div>
