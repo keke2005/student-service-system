@@ -15,7 +15,6 @@ const {
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore } = require("firebase-admin/firestore");
 
-// Firebase Admin configuration for local development and Render
 const serviceAccountJson =
   process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
@@ -34,7 +33,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://student-service-system.web.app"
+      "https://student-service-system.web.app",
+      "https://student-service-system.firebaseapp.com"
     ]
   })
 );
@@ -61,7 +61,14 @@ function requestError(message, statusCode = 400) {
   return error;
 }
 
-// HEALTH CHECK
+function validName(value) {
+  return /^[\p{L} ]{2,120}$/u.test(value);
+}
+
+function validGmail(value) {
+  return /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(value);
+}
+
 app.get("/api/health", async (req, res) => {
   try {
     await db.collection("admins").limit(1).get();
@@ -81,7 +88,6 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// AUTHENTICATION
 async function requireLogin(req, res, next) {
   try {
     const authorization =
@@ -106,7 +112,6 @@ async function requireLogin(req, res, next) {
   }
 }
 
-// ADMIN AUTHORIZATION
 async function requireAdmin(req, res, next) {
   try {
     const adminDoc = await db
@@ -136,7 +141,6 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-// RATE LIMITING
 const creationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
@@ -158,7 +162,74 @@ const managementLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// CREATE STUDENT
+app.get(
+  "/api/auth/role",
+  requireLogin,
+  async (req, res) => {
+    try {
+      const uid = req.decoded.uid;
+
+      const adminDoc = await db
+        .collection("admins")
+        .doc(uid)
+        .get();
+
+      if (
+        adminDoc.exists &&
+        adminDoc.data().active === true
+      ) {
+        return res.json({
+          success: true,
+          role: "admin",
+          redirect: "/admin/dashboard"
+        });
+      }
+
+      const studentDoc = await db
+        .collection("users")
+        .doc(uid)
+        .get();
+
+      const student = studentDoc.exists
+        ? studentDoc.data()
+        : null;
+
+      const email = String(
+        req.decoded.email || ""
+      ).toLowerCase();
+
+      if (
+        student &&
+        student.role === "student" &&
+        student.active === true &&
+        student.emailVerified === true &&
+        req.decoded.email_verified === true &&
+        student.email === email
+      ) {
+        return res.json({
+          success: true,
+          role: "student",
+          redirect: "/home"
+        });
+      }
+
+      return sendError(
+        res,
+        403,
+        "Your account is not approved or active."
+      );
+    } catch (error) {
+      console.error("Role check failed:", error);
+
+      return sendError(
+        res,
+        500,
+        "Unable to verify account role."
+      );
+    }
+  }
+);
+
 app.post(
   "/api/students",
   requireLogin,
@@ -175,9 +246,7 @@ app.post(
 
     const email = String(
       req.body.email || ""
-    )
-      .trim()
-      .toLowerCase();
+    ).trim().toLowerCase();
 
     const programme = String(
       req.body.programme || ""
@@ -200,9 +269,9 @@ app.post(
     );
 
     if (
-      !/^[\p{L} ]{2,120}$/u.test(fullName) ||
-      !/^\d{1,30}$/.test(studentId) ||
-      !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)
+      !validName(fullName) ||
+      !/^\d{4,20}$/.test(studentId) ||
+      !validGmail(email)
     ) {
       return sendError(
         res,
@@ -274,7 +343,7 @@ app.post(
           phone,
           role: "student",
           active: false,
-          invitationStatus: "pending_google",
+          invitationStatus: "pending_verification",
           createdBy: req.adminUid,
           createdAt: new Date().toISOString()
         };
@@ -283,19 +352,19 @@ app.post(
 
         transaction.create(studentIdRef, {
           emailKey: key,
-          status: "pending_google"
+          status: "pending_verification"
         });
 
         transaction.create(emailRef, {
           studentId,
-          status: "pending_google"
+          status: "pending_verification"
         });
       });
 
       return res.status(201).json({
         success: true,
         message:
-          "Student registered. They can now sign in with their approved Google account."
+          "Student registered. They can activate their account using verified Google Sign-In or a verified email/password account."
       });
     } catch (error) {
       console.error(
@@ -314,7 +383,6 @@ app.post(
   }
 );
 
-// ACTIVATE STUDENT AFTER VERIFIED GOOGLE SIGN-IN
 app.post(
   "/api/students/activate",
   requireLogin,
@@ -322,19 +390,22 @@ app.post(
   async (req, res) => {
     const decoded = req.decoded;
 
-    const email = String(decoded.email || "")
-      .trim()
-      .toLowerCase();
+    const email = String(
+      decoded.email || ""
+    ).trim().toLowerCase();
+
+    const provider =
+      decoded.firebase?.sign_in_provider;
 
     if (
-      decoded.firebase?.sign_in_provider !== "google.com" ||
       decoded.email_verified !== true ||
-      !email.endsWith("@gmail.com")
+      !validGmail(email) ||
+      !["google.com", "password"].includes(provider)
     ) {
       return sendError(
         res,
         403,
-        "Please sign in with your verified Google account."
+        "Please verify your Gmail address before activating your account."
       );
     }
 
@@ -352,15 +423,31 @@ app.post(
       .collection("studentEmails")
       .doc(key);
 
+    const adminRef = db
+      .collection("admins")
+      .doc(decoded.uid);
+
     try {
       const result = await db.runTransaction(
         async (transaction) => {
-          const [pendingDoc, userDoc, emailDoc] =
-            await transaction.getAll(
-              pendingRef,
-              userRef,
-              emailRef
+          const [
+            adminDoc,
+            pendingDoc,
+            userDoc,
+            emailDoc
+          ] = await transaction.getAll(
+            adminRef,
+            pendingRef,
+            userRef,
+            emailRef
+          );
+
+          if (adminDoc.exists) {
+            throw requestError(
+              "Administrator accounts do not require student activation.",
+              403
             );
+          }
 
           if (userDoc.exists) {
             const student = userDoc.data();
@@ -369,8 +456,7 @@ app.post(
               student.role !== "student" ||
               student.email !== email ||
               student.active !== true ||
-              student.emailVerified !== true ||
-              student.authProvider !== "google.com"
+              student.emailVerified !== true
             ) {
               throw requestError(
                 "Student access denied.",
@@ -384,7 +470,10 @@ app.post(
           if (
             !pendingDoc.exists ||
             !emailDoc.exists ||
-            emailDoc.data().status !== "pending_google"
+            ![
+              "pending_google",
+              "pending_verification"
+            ].includes(emailDoc.data().status)
           ) {
             throw requestError(
               "No approved student registration found for this Gmail address.",
@@ -398,7 +487,10 @@ app.post(
             student.email !== email ||
             student.role !== "student" ||
             student.active !== false ||
-            student.invitationStatus !== "pending_google" ||
+            ![
+              "pending_google",
+              "pending_verification"
+            ].includes(student.invitationStatus) ||
             emailDoc.data().studentId !== student.studentId
           ) {
             throw requestError(
@@ -416,7 +508,10 @@ app.post(
           if (
             !idDoc.exists ||
             idDoc.data().emailKey !== key ||
-            idDoc.data().status !== "pending_google"
+            ![
+              "pending_google",
+              "pending_verification"
+            ].includes(idDoc.data().status)
           ) {
             throw requestError(
               "Student ID reservation is invalid.",
@@ -430,7 +525,7 @@ app.post(
             active: true,
             emailVerified: true,
             invitationStatus: "activated",
-            authProvider: "google.com",
+            authProvider: provider,
             activatedAt: new Date().toISOString()
           };
 
@@ -483,7 +578,6 @@ app.post(
   }
 );
 
-// EDIT STUDENT INFORMATION
 app.patch(
   "/api/students/:uid",
   requireLogin,
@@ -557,7 +651,7 @@ app.patch(
 
     if (
       updates.fullName !== undefined &&
-      !/^[\p{L} ]{2,120}$/u.test(updates.fullName)
+      !validName(updates.fullName)
     ) {
       return sendError(
         res,
@@ -683,7 +777,6 @@ app.patch(
   }
 );
 
-// ACTIVATE OR DEACTIVATE STUDENT ACCOUNT
 app.patch(
   "/api/students/:uid/status",
   requireLogin,
@@ -733,8 +826,7 @@ app.patch(
 
         if (
           student.invitationStatus !== "activated" ||
-          student.emailVerified !== true ||
-          student.authProvider !== "google.com"
+          student.emailVerified !== true
         ) {
           throw requestError(
             "This student account has not completed verification.",
@@ -776,7 +868,6 @@ app.patch(
   }
 );
 
-// START SERVER
 app.listen(PORT, "0.0.0.0", () => {
   console.log(
     `StudentServe backend running on port ${PORT}`

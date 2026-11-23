@@ -1,34 +1,129 @@
 
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   GoogleAuthProvider,
   signInWithPopup,
-  signOut
+  signInWithEmailAndPassword,
+  signOut,
+  reload
 } from "firebase/auth";
 
-import { auth } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
 const API_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5000";
+  process.env.REACT_APP_API_URL || "http://localhost:500";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshAuthorization } = useAuth();
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const from = location.state?.from;
+  async function finishLogin(firebaseUser) {
+    await reload(firebaseUser);
 
-  const destination =
-    from?.pathname &&
-    from.pathname !== "/login" &&
-    !from.pathname.startsWith("/admin")
-      ? from.pathname + (from.search || "")
-      : "/services";
+    const adminSnapshot = await getDoc(
+      doc(db, "admins", firebaseUser.uid)
+    );
+
+    if (
+      adminSnapshot.exists() &&
+      adminSnapshot.data().active === true
+    ) {
+      const authorized = await refreshAuthorization(firebaseUser);
+
+      if (!authorized) {
+        throw new Error(
+          "Unable to verify administrator access."
+        );
+      }
+
+      navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+
+    if (!firebaseUser.emailVerified) {
+      throw new Error(
+        "Please verify your email address before signing in."
+      );
+    }
+
+    const token = await firebaseUser.getIdToken(true);
+
+    const response = await fetch(
+      `${API_URL}/api/students/activate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data.success !== true) {
+      throw new Error(
+        data.message ||
+          "Your student account is not approved or active."
+      );
+    }
+
+    const authorized = await refreshAuthorization(firebaseUser);
+
+    if (!authorized) {
+      throw new Error(
+        "Unable to verify your student account."
+      );
+    }
+
+    const requestedPath = location.state?.from?.pathname;
+
+    const destination =
+      requestedPath &&
+      requestedPath !== "/login" &&
+      !requestedPath.startsWith("/admin")
+        ? requestedPath
+        : "/home";
+
+    navigate(destination, { replace: true });
+  }
+
+  async function handleEmailLogin(event) {
+    event.preventDefault();
+
+    if (loading) return;
+
+    setError("");
+    setLoading(true);
+
+    try {
+      const result = await signInWithEmailAndPassword(
+        auth,
+        email.trim().toLowerCase(),
+        password
+      );
+
+      await finishLogin(result.user);
+    } catch (err) {
+      await signOut(auth).catch(() => {});
+
+      setError(
+        err.code === "auth/invalid-credential"
+          ? "Incorrect email or password."
+          : err.message || "Sign-in failed."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleGoogle() {
     if (loading) return;
@@ -43,78 +138,21 @@ export default function Login() {
         prompt: "select_account"
       });
 
-      const result = await signInWithPopup(auth, provider);
-      const googleUser = result.user;
-
-      if (!googleUser.emailVerified) {
-        throw new Error(
-          "Your Google account email is not verified."
-        );
-      }
-
-      const token = await googleUser.getIdToken();
-
-      const response = await fetch(
-        `${API_URL}/api/students/activate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const result = await signInWithPopup(
+        auth,
+        provider
       );
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Your student account has not been approved."
-        );
-      }
-
-      const authorized = await refreshAuthorization(
-        auth.currentUser
-      );
-
-      if (!authorized) {
-        throw new Error(
-          "StudentServe could not confirm your access. Please try again."
-        );
-      }
-
-      navigate(destination, {
-        replace: true
-      });
-
+      await finishLogin(result.user);
     } catch (err) {
-      try {
-        await signOut(auth);
-      } catch (signOutError) {
-        console.error("Sign-out failed:", signOutError);
-      }
+      await signOut(auth).catch(() => {});
 
       if (err.code === "auth/popup-closed-by-user") {
         setError("Google sign-in was cancelled.");
       } else if (err.code === "auth/popup-blocked") {
         setError("Please allow Google sign-in popups.");
-      } else if (
-        err.code ===
-        "auth/account-exists-with-different-credential"
-      ) {
-        setError(
-          "This email uses another sign-in method. Contact the administrator."
-        );
-      } else if (err instanceof TypeError) {
-        setError(
-          "Unable to connect to StudentServe. Check that the backend is running."
-        );
       } else {
-        setError(
-          err.message ||
-            "Google sign-in failed. Please try again."
-        );
+        setError(err.message || "Google sign-in failed.");
       }
     } finally {
       setLoading(false);
@@ -126,7 +164,6 @@ export default function Login() {
       <div className="student-login-container">
         <section className="student-login-form-panel">
           <div className="student-login-form-content">
-
             <img
               src="/images/LIMKOS.png"
               alt="Limkokwing University"
@@ -134,8 +171,64 @@ export default function Login() {
             />
 
             <div className="student-login-heading">
-              <h1>Student Login</h1>
+              <h1>StudentServe Login</h1>
+              <p>Students and Administrators</p>
             </div>
+
+            <form onSubmit={handleEmailLogin}>
+              <div className="form-group">
+                <label htmlFor="login-email">
+                  Email Address
+                </label>
+
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="login-password">
+                  Password
+                </label>
+
+                <input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="student-login-submit"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign In"}
+              </button>
+            </form>
+
+            <p
+              style={{
+                textAlign: "center",
+                margin: "18px 0"
+              }}
+            >
+              OR
+            </p>
 
             <button
               className="google-login-button"
@@ -143,9 +236,7 @@ export default function Login() {
               onClick={handleGoogle}
               disabled={loading}
             >
-              {loading
-                ? "Verifying your account..."
-                : "Continue with Google"}
+              Continue with Google
             </button>
 
             {error && (
@@ -158,16 +249,9 @@ export default function Login() {
             )}
 
             <p className="student-login-notice">
-              Only students registered by the university
-              administrator can access this portal.
+              Only approved students and administrators
+              can access StudentServe.
             </p>
-
-            <div className="student-admin-entry">
-              <Link to="/admin/login">
-                Admin Login
-              </Link>
-            </div>
-
           </div>
         </section>
       </div>

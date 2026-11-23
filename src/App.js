@@ -21,7 +21,6 @@ import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRoute from "./components/AdminRoute";
 
@@ -33,7 +32,6 @@ function App() {
   const location = useLocation();
   const { user, role, loading } = useAuth();
 
-  // Global Light / Dark Mode
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("studentserve-theme") || "dark";
   });
@@ -49,17 +47,11 @@ function App() {
     );
   };
 
-  // Pages that should not show student navigation
-  const authPages = [
-    "/login",
-    "/admin/login"
-  ];
-
   const isAdminPage =
     location.pathname.startsWith("/admin");
 
   const isAuthPage =
-    authPages.includes(location.pathname) || isAdminPage;
+    location.pathname === "/login" || isAdminPage;
 
   const showStudentLayout =
     !loading &&
@@ -69,7 +61,6 @@ function App() {
 
   return (
     <>
-      {/* STUDENT NAVBAR */}
       {showStudentLayout && (
         <Navbar
           theme={theme}
@@ -78,7 +69,6 @@ function App() {
       )}
 
       <Routes>
-        {/* LOGIN */}
         <Route
           path="/login"
           element={<Login />}
@@ -86,32 +76,24 @@ function App() {
 
         <Route
           path="/register"
-          element={
-            <Navigate to="/login" replace />
-          }
+          element={<Navigate to="/login" replace />}
         />
 
         <Route
           path="/forgot-password"
-          element={
-            <Navigate to="/login" replace />
-          }
+          element={<Navigate to="/login" replace />}
         />
 
         <Route
           path="/verify-email"
-          element={
-            <Navigate to="/login" replace />
-          }
+          element={<Navigate to="/login" replace />}
         />
 
-        {/* ADMIN LOGIN */}
         <Route
           path="/admin/login"
-          element={<AdminLogin />}
+          element={<Navigate to="/login" replace />}
         />
 
-        {/* ADMIN PROTECTED ROUTES */}
         <Route element={<AdminRoute />}>
           <Route
             path="/admin/dashboard"
@@ -124,13 +106,10 @@ function App() {
           />
         </Route>
 
-        {/* STUDENT PROTECTED ROUTES */}
         <Route element={<ProtectedRoute />}>
           <Route
             path="/"
-            element={
-              <Navigate to="/home" replace />
-            }
+            element={<Navigate to="/home" replace />}
           />
 
           <Route
@@ -169,17 +148,14 @@ function App() {
           />
         </Route>
 
-        {/* PAGE NOT FOUND */}
         <Route
           path="*"
           element={
             <div className="not-found">
               <h1>Page Not Found</h1>
-
               <p>
                 The page you are looking for does not exist.
               </p>
-
               <Link
                 to="/home"
                 className="primary-btn"
@@ -191,7 +167,6 @@ function App() {
         />
       </Routes>
 
-      {/* STUDENT FOOTER */}
       {showStudentLayout && <Footer />}
     </>
   );

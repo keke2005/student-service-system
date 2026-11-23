@@ -12,7 +12,6 @@ export default function ProtectedRoute() {
   const { user, role, loading } = useAuth();
   const location = useLocation();
 
-  // Wait for Firebase and StudentServe authorization.
   if (loading) {
     return (
       <div className="portal-loading" role="status">
@@ -21,7 +20,6 @@ export default function ProtectedRoute() {
     );
   }
 
-  // No approved session.
   if (!user) {
     return (
       <Navigate
@@ -32,7 +30,6 @@ export default function ProtectedRoute() {
     );
   }
 
-  // Administrators cannot access student-only routes.
   if (role === "admin") {
     return (
       <Navigate
@@ -42,11 +39,7 @@ export default function ProtectedRoute() {
     );
   }
 
-  // Only approved, verified Google students may continue.
-  if (
-    role !== "student" ||
-    !user.emailVerified
-  ) {
+  if (role !== "student" || !user.emailVerified) {
     return (
       <Navigate
         to="/login"

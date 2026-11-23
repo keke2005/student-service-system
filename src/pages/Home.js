@@ -5,195 +5,130 @@ import ServiceCard from "../components/ServiceCard";
 import { services } from "../data/services";
 
 export default function Home() {
-  const featuredServices = services.slice(0, 3);
-
   return (
     <main className="home-page">
-
-      {/* HERO SECTION */}
-      <section className="hero">
-        <div className="hero-content">
-
-          <span className="hero-label">
-            STUDENT SERVICE PORTAL
+      <section className="home-intro">
+        <div className="home-intro-content">
+          <span className="home-eyebrow">
+            LIMKOKWING UNIVERSITY
           </span>
 
-          <h1>
-            Student Services,
-            <br />
-            <span>Made Simple.</span>
-          </h1>
+          <h1>Student Service Request System</h1>
 
           <p>
-            Access university services, submit requests,
-            and track their progress — all in one place.
+            Welcome to StudentServe. You can request
+            academic documents, get registration
+            assistance, report technical problems and
+            submit general enquiries online.
           </p>
 
-          <div className="hero-buttons">
-            <Link
-              to="/services"
-              className="primary-btn"
-            >
-              Explore Services
-              <span aria-hidden="true"> →</span>
+          <div className="home-intro-actions">
+            <Link to="/services" className="primary-btn">
+              Browse Services
             </Link>
 
-            <Link
-              to="/requests"
-              className="secondary-btn"
-            >
+            <Link to="/requests" className="secondary-btn">
               My Requests
             </Link>
           </div>
-
-          <div className="hero-stats">
-            <div>
-              <h2>{services.length}</h2>
-              <p>Student Services</p>
-            </div>
-
-            <div>
-              <h2>24/7</h2>
-              <p>Online Access</p>
-            </div>
-          </div>
-
         </div>
 
-        {/* HERO INFORMATION CARD */}
-        <div className="hero-visual">
-          <div className="visual-card">
+        <div className="home-intro-panel">
+          <h2>Student Services</h2>
+          <p>
+            Find the service you need and submit your
+            request without visiting multiple offices.
+          </p>
 
-            <div className="visual-card-header">
-              <div className="visual-icon">
-                🎓
-              </div>
-
-              <div>
-                <span className="visual-eyebrow">
-                  STUDENTSERVE
-                </span>
-                <h2>How Can We Help?</h2>
-              </div>
+          <div className="home-intro-summary">
+            <div>
+              <strong>{services.length}</strong>
+              <span>Available Services</span>
             </div>
 
-            <div className="visual-item">
-              <span className="visual-item-icon">
-                📄
-              </span>
-
-              <div>
-                <strong>Academic Documents</strong>
-                <small>
-                  Transcripts and official letters
-                </small>
-              </div>
+            <div>
+              <strong>Online</strong>
+              <span>Request Submission</span>
             </div>
-
-            <div className="visual-item">
-              <span className="visual-item-icon">
-                🪪
-              </span>
-
-              <div>
-                <strong>Student Assistance</strong>
-                <small>
-                  Registration and student ID support
-                </small>
-              </div>
-            </div>
-
-            <div className="visual-item">
-              <span className="visual-item-icon">
-                💻
-              </span>
-
-              <div>
-                <strong>Technical Support</strong>
-                <small>
-                  Help with technical issues
-                </small>
-              </div>
-            </div>
-
-            <Link
-              to="/services"
-              className="visual-card-link"
-            >
-              Browse Services
-              <span aria-hidden="true"> →</span>
-            </Link>
-
           </div>
         </div>
       </section>
 
-      {/* FEATURED SERVICES */}
-      <section className="services-section">
-
-        <div className="section-heading">
+      <section className="home-services">
+        <div className="home-section-heading">
           <div>
-            <span className="section-label">
-              OUR SERVICES
+            <span className="home-eyebrow">
+              STUDENT SERVICES
             </span>
 
-            <h2>Services for Students</h2>
-          </div>
+            <h2>Available Services</h2>
 
-          <Link
-            to="/services"
-            className="home-view-all"
-          >
-            View All Services
-            <span aria-hidden="true"> →</span>
-          </Link>
+            <p>
+              Select a service to view its details,
+              processing time and responsible department.
+            </p>
+          </div>
         </div>
 
         <div className="services-grid">
-          {featuredServices.map((service) => (
+          {services.map((service) => (
             <ServiceCard
               key={service.id}
               service={service}
             />
           ))}
         </div>
-
-        <div className="section-action">
-          <Link
-            to="/services"
-            className="primary-btn"
-          >
-            Explore All Services →
-          </Link>
-        </div>
-
       </section>
 
-      {/* FINAL ACTION */}
-      <section className="cta-section">
-        <div className="home-cta-content">
-          <div>
-            <span className="section-label">
-              NEED ASSISTANCE?
-            </span>
+      <section className="home-process">
+        <div className="home-section-heading">
+          <span className="home-eyebrow">
+            REQUEST PROCESS
+          </span>
 
-            <h2>We're Here to Help</h2>
+          <h2>How It Works</h2>
 
+          <p>
+            Submit and manage your university service
+            requests in three steps.
+          </p>
+        </div>
+
+        <div className="home-process-grid">
+          <div className="home-process-step">
+            <span className="home-step-number">01</span>
+            <h3>Choose a Service</h3>
             <p>
-              Submit a service request and track
-              its progress online.
+              Browse the available services and select
+              the one you need.
             </p>
           </div>
 
-          <Link
-            to="/services"
-            className="cta-btn"
-          >
-            Submit a Request →
+          <div className="home-process-step">
+            <span className="home-step-number">02</span>
+            <h3>Submit Your Request</h3>
+            <p>
+              Complete the request form with your
+              information and reason for requesting.
+            </p>
+          </div>
+
+          <div className="home-process-step">
+            <span className="home-step-number">03</span>
+            <h3>Track Your Request</h3>
+            <p>
+              Open My Requests to view your submitted
+              requests and their current status.
+            </p>
+          </div>
+        </div>
+
+        <div className="home-process-actions">
+          <Link to="/requests" className="primary-btn">
+            View My Requests
           </Link>
         </div>
       </section>
-
     </main>
   );
 }

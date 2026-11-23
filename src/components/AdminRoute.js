@@ -10,7 +10,6 @@ import { useAuth } from "../context/AuthContext";
 export default function AdminRoute() {
   const { user, role, loading } = useAuth();
 
-  // Wait for Firebase and administrator authorization.
   if (loading) {
     return (
       <main className="portal-loading" role="status">
@@ -19,17 +18,15 @@ export default function AdminRoute() {
     );
   }
 
-  // No authorized user: return to administrator login.
   if (!user) {
     return (
       <Navigate
-        to="/admin/login"
-        replace
-      />
+  to="/login"
+  replace
+/>
     );
   }
 
-  // Only active administrators can access this route.
   if (role !== "admin") {
     return (
       <Navigate

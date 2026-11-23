@@ -8,7 +8,11 @@ import React, {
   useState
 } from "react";
 
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  reload
+} from "firebase/auth";
+
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
@@ -39,6 +43,12 @@ export function AuthProvider({ children }) {
       }
 
       try {
+        await reload(firebaseUser);
+
+        if (version !== checkVersion.current) {
+          return false;
+        }
+
         const adminSnapshot = await getDoc(
           doc(db, "admins", firebaseUser.uid)
         );
@@ -69,19 +79,13 @@ export function AuthProvider({ children }) {
           ? studentSnapshot.data()
           : null;
 
-        const token = await firebaseUser.getIdTokenResult();
-
-        if (version !== checkVersion.current) {
-          return false;
-        }
-
         if (
           student &&
           student.role === "student" &&
           student.active === true &&
           student.emailVerified === true &&
+          student.invitationStatus === "activated" &&
           firebaseUser.emailVerified === true &&
-          token.signInProvider === "google.com" &&
           student.email?.toLowerCase() ===
             firebaseUser.email?.toLowerCase()
         ) {
@@ -97,6 +101,7 @@ export function AuthProvider({ children }) {
           "StudentServe authorization error:",
           error
         );
+
         return false;
       } finally {
         if (version === checkVersion.current) {

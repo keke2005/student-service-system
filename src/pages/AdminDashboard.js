@@ -8,13 +8,13 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { httpsCallable } from "firebase/functions";
-import { auth, db, functions } from "../firebase";
+import { auth, db } from "../firebase";
 
 import { useAuth } from "../context/AuthContext";
 import ThemeToggle from "../components/ThemeToggle";
-const API_URL = process.env.REACT_APP_API_URL;
-
+const API_URL =
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:5000";
 const statuses = [
   "Pending",
   "In Progress",
@@ -498,99 +498,81 @@ export default function AdminDashboard({
   }
 
   
-  // CREATE STUDENT
-  async function createStudent(event) {
-    event.preventDefault();
+  
+async function createStudent(event) {
+  event.preventDefault();
 
-    if (creating) return;
+  if (creating) return;
 
-    setStudentError("");
-    setStudentSuccess("");
+  setStudentError("");
+  setStudentSuccess("");
 
-    const payload = {
-      fullName: formData.fullName.trim(),
-      studentId: formData.studentId.trim(),
-      email: formData.email.trim().toLowerCase(),
-      phone: formData.phone.trim(),
-      programme: formData.programme.trim(),
-      department: formData.department.trim(),
-      yearOfStudy: Number(formData.yearOfStudy),
-      semester: Number(formData.semester)
-    };
+  const payload = {
+    fullName: formData.fullName.trim(),
+    studentId: formData.studentId.trim(),
+    email: formData.email.trim().toLowerCase(),
+    phone: formData.phone.trim(),
+    programme: formData.programme.trim(),
+    department: formData.department.trim(),
+    yearOfStudy: Number(formData.yearOfStudy),
+    semester: Number(formData.semester)
+  };
 
-    if (!validAcademicData(payload)) {
-      setStudentError("Enter valid academic information.");
-      return;
-    }
-
-    if (!/^\d{4,20}$/.test(payload.studentId)) {
-      setStudentError(
-        "Student ID must contain 4 to 20 digits."
-      );
-      return;
-    }
-
-    if (
-      !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(
-        payload.email
-      )
-    ) {
-      setStudentError("Enter a valid Gmail address.");
-      return;
-    }
-
-    if (
-      payload.phone &&
-      !/^\d{7,15}$/.test(payload.phone)
-    ) {
-      setStudentError("Enter a valid phone number.");
-      return;
-    }
-
-    setCreating(true);
-
-    try {
-      const registerStudent = httpsCallable(
-        functions,
-        "createStudent"
-      );
-
-      const response = await registerStudent(payload);
-      const result = response.data;
-
-      setStudentSuccess(
-        result.message ||
-          "Student account created successfully."
-      );
-
-      setFormData({ ...emptyForm });
-    } catch (error) {
-      console.error("Student registration error:", error);
-
-      const messages = {
-        "functions/unauthenticated":
-          "Please sign in as an administrator.",
-        "functions/permission-denied":
-          "Only administrators can register students.",
-        "functions/already-exists":
-          "This student ID or email is already registered.",
-        "functions/invalid-argument":
-          "Please check the student information.",
-        "functions/not-found":
-          "Student registration is not deployed yet.",
-        "functions/unavailable":
-          "The registration service is unavailable."
-      };
-
-      setStudentError(
-        messages[error.code] ||
-          error.message ||
-          "Could not create the student account."
-      );
-    } finally {
-      setCreating(false);
-    }
+  if (!validAcademicData(payload)) {
+    setStudentError("Enter valid academic information.");
+    return;
   }
+
+  if (!/^\d{4,20}$/.test(payload.studentId)) {
+    setStudentError(
+      "Student ID must contain 4 to 20 digits."
+    );
+    return;
+  }
+
+  if (
+    !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(
+      payload.email
+    )
+  ) {
+    setStudentError("Enter a valid Gmail address.");
+    return;
+  }
+
+  if (
+    payload.phone &&
+    !/^\d{7,15}$/.test(payload.phone)
+  ) {
+    setStudentError("Enter a valid phone number.");
+    return;
+  }
+
+  setCreating(true);
+
+  try {
+    const result = await apiRequest(
+      "/api/students",
+      "POST",
+      payload
+    );
+
+    setStudentSuccess(
+      result.message ||
+        "Student registered successfully."
+    );
+
+    setFormData({ ...emptyForm });
+  } catch (error) {
+    console.error("Student registration error:", error);
+
+    setStudentError(
+      error.message ||
+        "Could not register the student."
+    );
+  } finally {
+    setCreating(false);
+  }
+}
 
 
   // UPDATE REQUEST STATUS
@@ -723,18 +705,19 @@ export default function AdminDashboard({
     }
   }
 
-  // LOGOUT
   async function logout() {
     try {
       await signOut(auth);
 
-      navigate("/admin/login", {
+      navigate("/login", {
         replace: true
       });
-    } catch {
-      window.alert("Unable to sign out.");
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.alert("Unable to sign out. Please try again.");
     }
   }
+
 
   const actionStyle = {
     display: "flex",
